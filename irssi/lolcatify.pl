@@ -1,12 +1,23 @@
 ## lolcatify.pl
 our $VERSION = '0.01';
-
-## Need at least perl-5.10.1
-use 5.10.1;
 use strict; use warnings FATAL => 'all';
 
+## Configurable save location.
 ## Non-portable path. Alter as-needed.
 my $SAVED_CATS_TO = $ENV{HOME} . "/.irssi/saved_lulzcats" ;
+
+
+use Irssi ();
+our %IRSSI = (
+  name => 'lolcatify',
+
+  authors => 'Jon Portnoy',
+  contact => 'avenj@cobaltirc.org',
+
+  description => 'Turn a user into a lolcat',
+  
+  license => 'perl5',
+);
 
 
 {
@@ -83,19 +94,6 @@ my $SAVED_CATS_TO = $ENV{HOME} . "/.irssi/saved_lulzcats" ;
 	} 
 
 }
-
-use Irssi        qw//;
-
-our %IRSSI = (
-  name => 'lolcatify',
-
-  authors => 'Jon Portnoy',
-  contact => 'avenj@cobaltirc.org',
-
-  description => 'Turn a user into a lolcat',
-  
-  license => 'perl5',
-);
 
 ## $lulzcats{ $mask } = time()
 our %lulzcats;
