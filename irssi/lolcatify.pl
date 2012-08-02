@@ -6,11 +6,83 @@ use 5.10.1;
 use strict; use warnings FATAL => 'all';
 
 ## Non-portable path. Alter as-needed.
-my $SAVED_CATS_TO = $ENV{HOME} . ".irssi/saved_lulzcats" ;
+my $SAVED_CATS_TO = $ENV{HOME} . "/.irssi/saved_lulzcats" ;
 
-## The Perl that irssi was built against will need this
-## ( or just shove LOLCAT.pm in .irssi/scripts/Acme/ )
-use Acme::LOLCAT qw//;
+
+{
+  ## Inlined Acme::LOLCAT
+  package
+    Acme::LOLCAT::Inline;
+  use strict; use warnings FATAL => 'all';
+
+	my %repl = (
+   	what     => [qw/wut whut/],   'you\b'   => [qw/yu yous yoo u/],
+   	cture    => 'kshur',          unless    => 'unles',
+   	'the\b'  => 'teh',            more      => 'moar',
+   	my       => [qw/muh mah/],    are       => [qw/r is ar/],
+   	eese     => 'eez',            ph        => 'f',
+   	'as\b'   => 'az',             seriously => 'srsly',
+   	'er\b'   => 'r',              sion      => 'shun',
+   	just     => 'jus',            'ose\b'   => 'oze',
+   	eady     => 'eddy',           'ome?\b'  => 'um',
+   	'of\b'   => [qw/of ov of/],   'uestion' => 'wesjun',
+   	want     => 'wants',          'ead\b'   => 'edd',
+   	ucke     => [qw/ukki ukke/],  sion      => 'shun',
+   	eak      => 'ekk',            age       => 'uj',
+   	like     => [qw/likes liek/], love      => [qw/loves lub lubs luv/],
+   	'\bis\b' => ['ar teh','ar'],  'nd\b'   => 'n',
+   	who      => 'hoo',            q(')      => q(),
+   	'ese\b'  => 'eez',            outh      => 'owf',
+   	scio     => 'shu',            esque     => 'esk',
+   	ture     => 'chur',           '\btoo?\b'=> [qw/to t 2 to t/],
+   	tious    => 'shus',           'sure\b'  => 'shur',
+   	'tty\b'  => 'tteh',           were      => 'was',
+   	'ok\b'   => [ qw/'k kay/ ],   '\ba\b'   => q(),
+   	ym       => 'im',             'thy\b'   => 'fee',
+   	'\wly\w' => 'li',             'que\w'   => 'kwe',
+   	oth      => 'udd',            ease      => 'eez',
+   	'ing\b'  => [qw/in ins ng ing/],
+   	'have'   => ['has', 'hav', 'haz a'],
+   	your     => [ qw/yur ur yore yoar/ ],
+   	'ove\b'  => [ qw/oov ove uuv uv oove/ ],
+   	for      => [ qw/for 4 fr fur for foar/ ],
+   	thank    => [ qw/fank tank thx thnx/ ],
+   	good     => [ qw/gud goed guud gude gewd/ ],
+   	really   => [ qw/rly rily rilly rilley/ ],
+   	world    => [ qw/wurrld whirld wurld wrld/ ],
+   	q(i'?m\b)     => 'im',
+   	'(?!e)ight'   => 'ite',
+   	'(?!ues)tion' => 'shun',
+   	q(you'?re)    => [ qw/yore yr/ ],
+   	'\boh\b(?!.*hai)'  => [qw/o ohs/],
+   	'can\si\s(?:ple(?:a|e)(?:s|z)e?)?\s?have\sa' => 'i can has',
+   	'(?:hello|\bhi\b|\bhey\b|howdy|\byo\b),?'    => 'oh hai,',
+   	'(?:god|allah|buddah?|diety)'                => 'ceiling cat',
+	);
+	
+	sub translate {
+  	my $phrase = lc( shift() // return );
+	
+  	$phrase =~ s{
+                	$_
+              	}
+              	{
+                	ref $repl{ $_ } eq 'ARRAY'
+                  	? $repl{ $_ }->[ rand( $#{ $repl{ $_ } } + 1 ) ]
+                  	: $repl{ $_ }
+              	}gex
+              	for keys %repl;
+	
+  	$phrase =~ s/\s{2,}/ /g;
+  	$phrase =~ s/teh teh/teh/g; # meh, it happens sometimes.
+  	if( int rand 10 == 2 ){ $phrase .= '.  kthxbye!' }
+  	if( int rand 10 == 1 ){ $phrase .= '.  kthx.' }
+  	$phrase =~ s/(\?|!|,|\.)\./$1/;
+  	
+    uc($phrase)
+	} 
+
+}
 
 use Irssi        qw//;
 
@@ -61,7 +133,7 @@ sub incoming_msg {
     if ( $serv->mask_match_address($mask, $nick, $addr) ) {
       Irssi::signal_continue(
         $serv,
-        Acme::LOLCAT::translate($msg),
+        Acme::LOLCAT::Inline::translate($msg),
         $nick, $addr, $target
       );
     
@@ -108,20 +180,6 @@ sub lolcat_list {
       window => $win,
       lines  => \@output,
     );
-  }
-}
-
-sub print_cur {
-  my %args = @_;
-  $args{lc $_} = delete $args{$_} for keys %args;
-
-  return unless defined $args{lines}
-    and ref $args{lines} eq 'ARRAY' ;
-  
-  if (ref $args{window}) {
-    $args{window}->print($_) for @{ $args{lines} };
-  } else {
-    Irssi::print($_) for @{ $args{lines} };
   }
 }
 
@@ -255,4 +313,18 @@ sub normalize_mask {
   }
 
   $mask[0] . '!' . $mask[1] . '@' . $mask[2] 
+}
+
+sub print_cur {
+  my %args = @_;
+  $args{lc $_} = delete $args{$_} for keys %args;
+
+  return unless defined $args{lines}
+    and ref $args{lines} eq 'ARRAY' ;
+  
+  if (ref $args{window}) {
+    $args{window}->print($_) for @{ $args{lines} };
+  } else {
+    Irssi::print($_) for @{ $args{lines} };
+  }
 }
