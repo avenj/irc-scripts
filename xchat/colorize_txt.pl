@@ -3,17 +3,19 @@ use Xchat;
 use 5.12.1;
 my $VERSION = '0.2';
 
-
-### TODO:
+## Change the color of a user's channel text (and their nick)
 ##
 ## Currently fails if you're stripping colors ..
 ## .. not sure if overriding is the Right Thing To Do
-## (could swap 'set' values temporarily)
 ##
+### TODO:
 ## Bold / underline attribs?
 ##
 ## Does not currently handle per-context casemap
 ## (cheaps out and uses lc())
+
+## Licensed under the same terms as Perl 5
+##   - Jon Portnoy  avenj@cobaltirc.org
 
 require File::Spec;
 
