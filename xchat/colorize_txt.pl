@@ -3,8 +3,10 @@ use Xchat;
 use 5.12.1;
 my $VERSION = '0.1';
 
-## FIXME need command hook for managing color list
-##  Also need save/load subs
+require File::Spec;
+
+my $save_path = get_save_location("colorified.cf")
+  or die "Could not determine a safe save location";
 
 my @reg = (
   'Channel Message',
@@ -16,7 +18,6 @@ my @reg = (
 );
 
 my %nicks;
-## FIXME hook to get color key names?
 my %cl = qw/
   darkblue    18
   blue        28
@@ -38,14 +39,20 @@ my %cl = qw/
 Xchat::register('ColorizeTxt', $VERSION, "Colorize text from users");
 
 Xchat::print("o hai, colorizer thingo loaded");
-hook_print($_, \&colorify,
+Xchat::print($_) for (
+  "-> Add via /colorify <nick> <color>",
+  "-> Del via /decolorify <nick>",
+  "-> List current via /colorify",
+  "-> List colors via /colorify -colors",
+);
+Xchat::hook_print($_, \&colorify,
   {
     data     => $_,
     priority => Xchat::PRI_HIGH,
   },
 ) for @reg;
 
-hook_command( $_, \&cmd_colorify,
+Xchat::hook_command( $_, \&cmd_colorify,
   {
     help_text => "Colorify/decolorify text from users",
   },
@@ -78,9 +85,16 @@ sub colorify {
 sub get_color_for {
   my ($nick) = @_;
 
-  ## FIXME load %nicks list if none loaded yet
-  ##  Map ANSI colors to names
-  ##  Check maintained list, add appropriate ANSI color code
+  %nicks = %{ load_colorified($save_path) }
+    unless keys %nicks;
+  my $named_c = $nicks{$nick} || return;
+
+  unless ($cl{$named_c}) {
+    Xchat::print("$nick has unknown color $named_c");
+    return
+  }
+
+  $cl{$named_c}
 }
 
 sub cmd_colorify {
@@ -88,19 +102,20 @@ sub cmd_colorify {
 
   my $nick = lc($args[0] || '');
 
-  ## FIXME load list if not already loaded
+  %nicks = %{ load_colorified($save_path) }
+    unless keys %nicks;
 
   unless ($nick) {
-    ## FIXME if no $nick specified, print current list
     Xchat::print("Current colorifications:");
-    Xchat::print($_)
+    Xchat::print("  $_")
       for map {; "$_ is $nicks{$_}" } keys %nicks;
     return Xchat::EAT_ALL
   }
 
 
   if ($nick eq '-colors') {
-    ## FIXME print color key list
+    Xchat::print("Available colors:");
+    Xchat::print("  $_") for keys %cl;
     return Xchat::EAT_ALL
   }
 
@@ -113,8 +128,9 @@ sub cmd_colorify {
     }
 
     $nicks{$nick} = $color;
-    ## FIXME call save
 
+    Xchat::print("coloring $nick");
+    save_colorified($save_path, \%nicks);
   } elsif ($cmd eq 'decolorify' || $cmd eq 'uncolorify') {
 
     unless (delete $nicks{$nick}) {
@@ -122,8 +138,8 @@ sub cmd_colorify {
       return Xchat::EAT_ALL
     }
 
-    ## FIXME call save
-
+    Xchat::print("decoloring $nick");
+    save_colorified($save_path, \%nicks);
   } else {
     Xchat::print("what the fuck? fell through in cmd_colorify")
   }
@@ -131,5 +147,59 @@ sub cmd_colorify {
   Xchat::EAT_ALL
 }
 
+sub get_save_location {
+  my ($file) = @_;
+  my $dir = Xchat::get_info('xchatdir')  ## X-Chat
+    || Xchat::get_info('configdir');     ## HexChat
+
+  unless ($dir) {
+    warn "get_save_location could not determine a configdir";
+    return
+  }
+
+  File::Spec->catfile($dir, $file)
+}
+
+sub save_colorified {
+  my ($file, $ref) = @_;
+
+  die "Expected file and ref" unless $file and ref $ref eq 'HASH';
+
+  my @ln;
+  while (my ($key,$val) = each %$ref) {
+    push @ln, "$key $val\n";
+  }
+  return unless @ln;
+
+  open my $fh, '>', $file
+    or warn "Could not open $file to save colorifications: $!"
+    and return;
+
+  print $fh @ln;
+  close $fh;
+
+  1
+}
+
+sub load_colorified {
+  my ($file) = @_;
+
+  my %loaded;
+  return \%loaded unless -e $file;
+
+  open my $fh, '<', $file
+      or warn "Could not open $file to restore colorifications: $!"
+      and return;
+  my @in = readline($fh);
+  close $fh;
+
+  while ($_ = shift @in) {
+    chomp;
+    my ($nick,$val) = split ' ';
+    $loaded{ lc($nick) } = $val;
+  }
+
+  \%loaded
+}
 
 __END__
