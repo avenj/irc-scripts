@@ -12,8 +12,6 @@ my $VERSION = '0.2';
 ##
 ## Bold / underline attribs?
 ##
-## ... should we color nicks?
-##
 ## Does not currently handle per-context casemap
 ## (cheaps out and uses lc())
 
@@ -90,6 +88,8 @@ sub colorify {
 
   $_[0]->[1] = "\003" . $colorify . $first;
   $last .= "\003";
+
+  $_[0]->[0] = "\003" . $colorify . $nick ."\003";
 
   Xchat::emit_print($event, @{ $_[0] });
   Xchat::EAT_ALL
