@@ -11,6 +11,11 @@ my $VERSION = '0.2';
 ## (could swap 'set' values temporarily)
 ##
 ## Bold / underline attribs?
+##
+## ... should we color nicks?
+##
+## Does not currently handle per-context casemap
+## (cheaps out and uses lc())
 
 require File::Spec;
 
