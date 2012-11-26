@@ -7,6 +7,15 @@ use strict; use warnings FATAL => 'all';
 my $SAVED_CATS_TO = $ENV{HOME} . "/.irssi/saved_lulzcats" ;
 
 
+## I often find there are people on IRC who are completely obnoxious,
+## but make enough noise that flow of discussion becomes confusing 
+## when making use of /ignore -- I'd rather just turn them into a lolcat,
+## so rather than stab myself in the thigh every time a monkey bangs on 
+## his keyboard, I can giggle like a girl.
+##
+##  -> /load lolcatify.pl
+##  -> /lolcat help
+
 use Irssi ();
 our %IRSSI = (
   name => 'lolcatify',
