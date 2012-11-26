@@ -169,7 +169,6 @@ sub save_colorified {
   while (my ($key,$val) = each %$ref) {
     push @ln, "$key $val\n";
   }
-  return unless @ln;
 
   open my $fh, '>', $file
     or warn "Could not open $file to save colorifications: $!"
