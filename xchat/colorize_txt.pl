@@ -1,7 +1,16 @@
 use strict; use warnings FATAL => 'all';
 use Xchat;
 use 5.12.1;
-my $VERSION = '0.1';
+my $VERSION = '0.2';
+
+
+### TODO:
+##
+## Currently fails if you're stripping colors ..
+## .. not sure if overriding is the Right Thing To Do
+## (could swap 'set' values temporarily)
+##
+## Bold / underline attribs?
 
 require File::Spec;
 
@@ -13,8 +22,6 @@ my @reg = (
   'Channel Action',
   'Channel Msg Hilight',
   'Channel Action Hilight',
-#  'Your Message',
-#  'Your Action',
 );
 
 my %nicks;
@@ -38,13 +45,14 @@ my %cl = qw/
 
 Xchat::register('ColorizeTxt', $VERSION, "Colorize text from users");
 
-Xchat::print("o hai, colorizer thingo loaded");
+Xchat::print("o hai, colorizer thingo $VERSION loaded");
 Xchat::print($_) for (
   "-> Add via /colorify <nick> <color>",
   "-> Del via /decolorify <nick>",
   "-> List current via /colorify",
   "-> List colors via /colorify -colors",
 );
+
 Xchat::hook_print($_, \&colorify,
   {
     data     => $_,
@@ -57,6 +65,7 @@ Xchat::hook_command( $_, \&cmd_colorify,
     help_text => "Colorify/decolorify text from users",
   },
 ) for qw/colorify decolorify uncolorify/;
+
 
 sub colorify {
   my $event = $_[1];
@@ -79,22 +88,6 @@ sub colorify {
 
   Xchat::emit_print($event, @{ $_[0] });
   Xchat::EAT_ALL
-}
-
-
-sub get_color_for {
-  my ($nick) = @_;
-
-  %nicks = %{ load_colorified($save_path) }
-    unless keys %nicks;
-  my $named_c = $nicks{$nick} || return;
-
-  unless ($cl{$named_c}) {
-    Xchat::print("$nick has unknown color $named_c");
-    return
-  }
-
-  $cl{$named_c}
 }
 
 sub cmd_colorify {
@@ -145,6 +138,21 @@ sub cmd_colorify {
   }
 
   Xchat::EAT_ALL
+}
+
+sub get_color_for {
+  my ($nick) = @_;
+
+  %nicks = %{ load_colorified($save_path) }
+    unless keys %nicks;
+  my $named_c = $nicks{$nick} || return;
+
+  unless ($cl{$named_c}) {
+    Xchat::print("$nick has unknown color $named_c");
+    return
+  }
+
+  $cl{$named_c}
 }
 
 sub get_save_location {
