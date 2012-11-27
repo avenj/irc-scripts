@@ -129,7 +129,7 @@ sub cmd_colorify {
 
     $nicks{$nick} = $color;
 
-    Xchat::print("coloring $nick");
+    Xchat::print("coloring $nick ($color)");
     save_colorified($save_path, \%nicks);
   } elsif ($cmd eq 'decolorify' || $cmd eq 'uncolorify') {
 
