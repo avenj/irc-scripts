@@ -102,7 +102,7 @@ sub cmd_colorify {
 
   my $nick = lc($args[0] || '');
 
-  %nicks = %{ load_colorified($save_path) }
+  %nicks = %{ load_colorified($save_path) || {} }
     unless keys %nicks;
 
   unless ($nick) {
@@ -150,7 +150,7 @@ sub cmd_colorify {
 sub get_color_for {
   my ($nick) = @_;
 
-  %nicks = %{ load_colorified($save_path) }
+  %nicks = %{ load_colorified($save_path) || {} }
     unless keys %nicks;
   my $named_c = $nicks{$nick} || return;
 
