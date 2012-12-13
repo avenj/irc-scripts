@@ -8,9 +8,9 @@ my $SAVED_CATS_TO = $ENV{HOME} . "/.irssi/saved_lulzcats" ;
 
 
 ## I often find there are people on IRC who are completely obnoxious,
-## but make enough noise that flow of discussion becomes confusing 
+## but make enough noise that flow of discussion becomes confusing
 ## when making use of /ignore -- I'd rather just turn them into a lolcat,
-## so rather than stab myself in the thigh every time a monkey bangs on 
+## so rather than stab myself in the thigh every time a monkey bangs on
 ## his keyboard, I can giggle like a girl.
 ##
 ##  -> /load lolcatify.pl
@@ -24,7 +24,7 @@ our %IRSSI = (
   contact => 'avenj@cobaltirc.org',
 
   description => 'Turn a user into a lolcat',
-  
+
   license => 'perl5',
 );
 
@@ -79,10 +79,10 @@ our %IRSSI = (
    	'(?:hello|\bhi\b|\bhey\b|howdy|\byo\b),?'    => 'oh hai,',
    	'(?:god|allah|buddah?|diety)'                => 'ceiling cat',
 	);
-	
+
 	sub translate {
   	my $phrase = lc( shift() // return );
-	
+
   	$phrase =~ s{
                 	$_
               	}
@@ -92,15 +92,15 @@ our %IRSSI = (
                   	: $repl{ $_ }
               	}gex
               	for keys %repl;
-	
+
   	$phrase =~ s/\s{2,}/ /g;
   	$phrase =~ s/teh teh/teh/g; # meh, it happens sometimes.
   	if( int rand 10 == 2 ){ $phrase .= '.  kthxbye!' }
   	if( int rand 10 == 1 ){ $phrase .= '.  kthx.' }
   	$phrase =~ s/(\?|!|,|\.)\./$1/;
-  	
+
     uc($phrase)
-	} 
+	}
 
 }
 
@@ -143,7 +143,7 @@ sub incoming_msg {
         Acme::LOLCAT::Inline::translate($msg),
         $nick, $addr, $target
       );
-    
+
       last MASK
     }
   }
@@ -178,11 +178,11 @@ sub lolcat_list {
     );
   } else {
     my @output = ( "I haz cats:" );
-    
+
     push( @output,
       " - " . $_
     ) for keys %lulzcats;
-  
+
     print_cur(
       window => $win,
       lines  => \@output,
@@ -200,7 +200,7 @@ sub lolcat_add {
       window => $win,
       lines  => [ "I haz no cat to add!" ],
     );
-    
+
     return
   }
 
@@ -226,10 +226,10 @@ sub lolcat_del {
       window => $win,
       lines  => [ "I haz no cat to lose!" ],
     );
-    
+
     return
   }
-  
+
   if (delete $lulzcats{ $mask }) {
     print_cur(
       window => $win,
@@ -251,7 +251,7 @@ sub save_cats {
     my $ts = $lulzcats{$mask};
     push( @output,
       "$mask $ts\n"
-    );    
+    );
   }
 
   return unless @output;
@@ -285,7 +285,7 @@ sub restore_cats {
 
     $lulzcats{ $mask } = $ts;
   }
-  
+
   1
 }
 
@@ -298,7 +298,7 @@ sub normalize_mask {
 
   ## **+ --> *
   $orig =~ s/\*{2,}/*/g;
-  
+
   my @mask;
   my $piece;
 
@@ -319,7 +319,7 @@ sub normalize_mask {
     $mask[$_] = '*' unless defined $mask[$_];
   }
 
-  $mask[0] . '!' . $mask[1] . '@' . $mask[2] 
+  $mask[0] . '!' . $mask[1] . '@' . $mask[2]
 }
 
 sub print_cur {
@@ -328,7 +328,7 @@ sub print_cur {
 
   return unless defined $args{lines}
     and ref $args{lines} eq 'ARRAY' ;
-  
+
   if (ref $args{window}) {
     $args{window}->print($_) for @{ $args{lines} };
   } else {
