@@ -5,17 +5,18 @@ my $VERSION = '0.2';
 
 ## Change the color of a user's channel text (and their nick)
 ##
-## Currently fails if you're stripping colors ..
-## .. not sure if overriding is the Right Thing To Do
-##
-### TODO:
-## Bold / underline attribs?
-##
-## Does not currently handle per-context casemap
-## (cheaps out and uses lc())
-
 ## Licensed under the same terms as Perl 5
 ##   - Jon Portnoy  avenj@cobaltirc.org
+##
+## CAVEATS:
+##  Currently fails if you're stripping colors ..
+##  . . not sure if overriding is the Right Thing To Do
+##
+## TODO:
+##  Bold / underline attribs?
+##
+##  Does not currently handle per-context casemap
+##  (cheaps out and uses lc())
 
 require File::Spec;
 
@@ -115,7 +116,7 @@ sub cmd_colorify {
 
   if ($nick eq '-colors') {
     Xchat::print("Available colors:");
-    Xchat::print("  $_") for keys %cl;
+    Xchat::print("  $_") for sort keys %cl;
     return Xchat::EAT_ALL
   }
 
