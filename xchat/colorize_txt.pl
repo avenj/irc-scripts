@@ -29,6 +29,8 @@ my @reg = (
   'Channel Msg Hilight',
   'Channel Action Hilight',
 );
+## Uncomment next line to colorify private also:
+# push @reg, 'Private Message', 'Private Action';
 
 my %nicks;
 my %cl = qw/
