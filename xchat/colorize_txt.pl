@@ -1,6 +1,6 @@
 use strict; use warnings FATAL => 'all';
 use Xchat;
-use 5.12.1;
+use 5.10.1;
 my $VERSION = '0.2';
 
 ## Change the color of a user's channel text (and their nick)
@@ -91,8 +91,9 @@ sub colorify {
 
   my $last  = $_[0]->[-1];
 
-  $_[0]->[1] = "\003" . $colorify . $first;
-  $last .= "\003";
+  $_[0]->[1]   = "\003" . $colorify . $first;
+  ## FIXME unneeded..?
+  $_[0]->[-1] .= "\003";
 
   $_[0]->[0] = "\003" . $colorify . $nick ."\003";
 
@@ -110,15 +111,19 @@ sub cmd_colorify {
 
   unless ($nick) {
     Xchat::print("Current colorifications:");
-    Xchat::print("  $_")
-      for map {; "$_ is $nicks{$_}" } keys %nicks;
+    for my $nick (keys %nicks) {
+      my $color = $nicks{$nick};
+      Xchat::print(" \003".$cl{$color}."$nick is $color\003");
+    }
     return Xchat::EAT_ALL
   }
 
 
   if ($nick eq '-colors') {
-    Xchat::print("Available colors:");
-    Xchat::print("  $_") for sort keys %cl;
+    Xchat::print(' -> Available colors:');
+    for my $color (sort keys %cl) {
+      Xchat::print(" \003".$cl{$color}."$color \003")
+    }
     return Xchat::EAT_ALL
   }
 
@@ -132,7 +137,7 @@ sub cmd_colorify {
 
     $nicks{$nick} = $color;
 
-    Xchat::print("coloring $nick ($color)");
+    Xchat::print("coloring $nick $color");
     save_colorified($save_path, \%nicks);
   } elsif ($cmd eq 'decolorify' || $cmd eq 'uncolorify') {
 
