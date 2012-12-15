@@ -111,7 +111,7 @@ sub cmd_colorify {
 
   unless ($nick) {
     Xchat::print("Current colorifications:");
-    for my $nick (keys %nicks) {
+    for my $nick (sort keys %nicks) {
       my $color = $nicks{$nick};
       Xchat::print(" \003".$cl{$color}."$nick is $color\003");
     }
