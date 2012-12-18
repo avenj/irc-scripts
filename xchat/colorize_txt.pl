@@ -1,7 +1,16 @@
 use strict; use warnings FATAL => 'all';
-use Xchat;
-use 5.10.1;
-my $VERSION = '0.2';
+use Xchat; use 5.10.1;
+my $VERSION = '0.3';
+my @reg; my $opts = {};
+
+###### CONFIGURABLE ######
+### Uncomment next line to colorify private also:
+# push @reg, 'Private Message', 'Private Action';
+### Uncomment next line to *only* colorify nicknames:
+# $opts->{nick_only} = 1;
+### Uncomment next line to *not* colorify nicknames (only txt):
+# $opts->{except_nicks} = 1;
+##########################
 
 ## Change the color of a user's channel text (and their nick)
 ##
@@ -23,15 +32,13 @@ require File::Spec;
 my $save_path = get_save_location("colorified.cf")
   or die "Could not determine a safe save location";
 
-my @reg = (
+@reg = (
+  @reg,
   'Channel Message',
   'Channel Action',
   'Channel Msg Hilight',
   'Channel Action Hilight',
 );
-## Uncomment next line to colorify private also:
-# push @reg, 'Private Message', 'Private Action';
-
 my %nicks;
 my %cl = qw/
   darkblue    18
@@ -91,11 +98,15 @@ sub colorify {
 
   my $last  = $_[0]->[-1];
 
-  $_[0]->[1]   = "\003" . $colorify . $first;
-  ## FIXME unneeded..?
-  $_[0]->[-1] .= "\003";
+  unless ($opts->{nick_only}) {
+    $_[0]->[1]   = "\003" . $colorify . $first;
+    ## FIXME unneeded..? too lazy to check
+    $_[0]->[-1] .= "\003";
+  }
 
-  $_[0]->[0] = "\003" . $colorify . $nick ."\003";
+  if ($opts->{nick_only} || !$opts->{except_nicks}) {
+    $_[0]->[0] = "\003" . $colorify . $nick ."\003";
+  }
 
   Xchat::emit_print($event, @{ $_[0] });
   Xchat::EAT_ALL
