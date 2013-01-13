@@ -1,46 +1,36 @@
 use strict; use warnings FATAL => 'all';
-use Xchat; use 5.10.1;
-my $VERSION = '0.3';
-my @reg; my $opts = {};
+use Xchat; use 5.10.1; my $VERSION = '0.4'; my @reg; my $opts = {};
 
 ###### CONFIGURABLE ######
 ### Uncomment next line to colorify private also:
 # push @reg, 'Private Message', 'Private Action';
+
 ### Uncomment next line to *only* colorify nicknames:
 # $opts->{nick_only} = 1;
+
 ### Uncomment next line to *not* colorify nicknames (only txt):
 # $opts->{except_nicks} = 1;
-##########################
+
+### Default should be fine:
+my $save_path = get_save_location("colorified.cf")
+  or die "Could not determine a safe save location";
+
+### You can alter color names below, if you're playing with Local Color hues.
 
 ## Change the color of a user's channel text (and their nick)
-##
 ## Licensed under the same terms as Perl 5
 ##   - Jon Portnoy  avenj@cobaltirc.org
 ##
 ## CAVEATS:
 ##  Currently fails if you're stripping colors ..
-##  . . not sure if overriding is the Right Thing To Do
-##
+##   . . not sure if overriding is the Right Thing To Do
 ## TODO:
 ##  Bold / underline attribs?
 ##
 ##  Does not currently handle per-context casemap
 ##  (cheaps out and uses lc())
 
-require File::Spec;
-
-my $save_path = get_save_location("colorified.cf")
-  or die "Could not determine a safe save location";
-
-@reg = (
-  @reg,
-  'Channel Message',
-  'Channel Action',
-  'Channel Msg Hilight',
-  'Channel Action Hilight',
-);
-my %nicks;
-my %cl = qw/
+my %col_by_name = qw/
   darkblue    18
   blue        28
   cyan        26
@@ -57,6 +47,20 @@ my %cl = qw/
   gray        31
   lightgray   16
 /;
+
+
+my %name_by_col = reverse %col_by_name;
+my %nicks;
+
+@reg = (
+  @reg,
+  'Channel Message',
+  'Channel Action',
+  'Channel Msg Hilight',
+  'Channel Action Hilight',
+);
+
+use Scalar::Util 'looks_like_number';
 
 Xchat::register('ColorizeTxt', $VERSION, "Colorize text from users");
 
@@ -122,9 +126,10 @@ sub cmd_colorify {
 
   unless ($nick) {
     Xchat::print("Current colorifications:");
-    for my $nick (sort keys %nicks) {
-      my $color = $nicks{$nick};
-      Xchat::print(" \003".$cl{$color}."$nick is $color\003");
+    for my $this_nick (sort keys %nicks) {
+      my $col_code = $nicks{$this_nick};
+      my $col_name = $name_by_col{$col_code} // $col_code;
+      Xchat::print(" \003".$col_code."$this_nick is $col_name ($col_code)\003");
     }
     return Xchat::EAT_ALL
   }
@@ -132,24 +137,54 @@ sub cmd_colorify {
 
   if ($nick eq '-colors') {
     Xchat::print(' -> Available colors:');
-    for my $color (sort keys %cl) {
-      Xchat::print(" \003".$cl{$color}."$color \003")
+    for my $col_name (sort keys %col_by_name) {
+      Xchat::print(" \003".$col_by_name{$col_name} . $col_name."\003")
     }
     return Xchat::EAT_ALL
   }
 
   if ($cmd eq 'colorify') {
-    my $color = lc($args[1] || '');
+    my $opt = $args[1];
+    my ($col_name, $col_code);
 
-    unless ($color && $cl{$color}) {
-      Xchat::print("No color specified or no such color.");
+    unless (defined $opt) {
+      ## Requesting current color for a user.
+      if (defined $nicks{$nick}) {
+        $col_code = $nicks{$nick};
+        $col_name = $col_by_name{$col_code};
+        Xchat::print(" \003".$col_code.$nick." is $col_name ($col_code)\003");
+      } else {
+        Xchat::print("User '$nick' is not currently colorifed.");
+      }
       return Xchat::EAT_ALL
     }
 
-    $nicks{$nick} = $color;
+    if (index($nick, '%') == 0) {
+      ## Reserved for config flags.
+      Xchat::print("Nickname is noit valid ($nick)");
+      return Xchat::EAT_ALL
+    }
 
-    Xchat::print("coloring $nick $color");
+    $opt = lc $opt;
+
+    if (looks_like_number $opt) {
+      $col_code = $opt;
+      unless ($col_name = $name_by_col{$opt}) {
+        Xchat::print("Warning; do not have a name for color code $opt");
+        $col_name = $opt
+      }
+    } else {
+      unless ($col_code = $col_by_name{$opt}) {
+        Xchat::print("No color code found for color '$opt'");
+        return Xchat::EAT_ALL
+      }
+      $col_name = $opt;
+    }
+
+    $nicks{$nick} = $col_code;
+    Xchat::print("coloring $nick $col_name ($col_code)");
     save_colorified($save_path, \%nicks);
+
   } elsif ($cmd eq 'decolorify' || $cmd eq 'uncolorify') {
 
     unless (delete $nicks{$nick}) {
@@ -169,16 +204,17 @@ sub cmd_colorify {
 sub get_color_for {
   my ($nick) = @_;
 
+  ## Get nick -> color code map.
   %nicks = %{ load_colorified($save_path) || {} }
     unless keys %nicks;
-  my $named_c = $nicks{$nick} || return;
+  my $col_code = $nicks{$nick} || return;
 
-  unless ($cl{$named_c}) {
-    Xchat::print("$nick has unknown color $named_c");
+  unless (looks_like_number $col_code) {
+    Xchat::print("$nick has unknown color $col_code");
     return
   }
 
-  $cl{$named_c}
+  $col_code
 }
 
 sub get_save_location {
@@ -191,6 +227,7 @@ sub get_save_location {
     return
   }
 
+  require File::Spec;
   File::Spec->catfile($dir, $file)
 }
 
@@ -229,6 +266,19 @@ sub load_colorified {
   while ($_ = shift @in) {
     chomp;
     my ($nick,$val) = split ' ';
+    unless ( looks_like_number($val) ) {
+      ## Backwards-compat.
+      if (defined $col_by_name{$val}) {
+        ## If we know what this symbolic name is, use that value.
+        $val = $col_by_name{$val};
+        Xchat::print("Converted old-style config for $nick")
+      } else {
+        ## Otherwise warn and kill the line.
+        Xchat::print("Warning; could not convert old-style config for $nick");
+        Xchat::print("  (do not recognize symbolic color name $val)");
+        next
+      }
+    }
     $loaded{ lc($nick) } = $val;
   }
 
