@@ -1,5 +1,5 @@
 use strict; use warnings FATAL => 'all';
-use Xchat; use 5.10.1; my $VERSION = '0.5';
+use Xchat; use 5.10.1; my $VERSION = '0.61';
 
 ### Default should be fine:
 my $save_path = get_save_location("colorified.cf")
@@ -76,14 +76,10 @@ Xchat::hook_print($_, \&colorify,
     priority => Xchat::PRI_HIGH,
   },
 ) for 'Channel Message', 'Channel Action',
-      'Channel Msg Hilight', 'Channel Action Hilight';
-
-Xchat::hook_print($_, \&colorify_pvt,
-  {
-    data     => $_,
-    priority => Xchat::PRI_HIGH,
-  },
-) for 'Private Message', 'Private Action';
+      'Channel Msg Hilight', 'Channel Action Hilight',
+      'Private Message', 'Private Action',
+      'Private Message to Dialog',
+      'Private Action to Dialog';
 
 Xchat::hook_command( $_, \&cmd_colorify,
   {
@@ -94,6 +90,8 @@ Xchat::hook_command( $_, \&cmd_colorify,
 
 sub colorify {
   my $event = $_[1];
+  return Xchat::EAT_NONE 
+    if not $opts->{color_private} and index($event, 'Private') == 0;
 
   my ($nick, $first) = @{ $_[0] };
 
@@ -103,8 +101,7 @@ sub colorify {
 
   return Xchat::EAT_NONE
     if not defined $first
-    or not $colorify
-    or $first =~ /^\003/;
+    or not $colorify;
 
   my $last  = $_[0]->[-1];
 
@@ -121,12 +118,6 @@ sub colorify {
   Xchat::emit_print($event, @{ $_[0] });
   Xchat::EAT_ALL
 }
-
-sub colorify_pvt {
-  return Xchat::EAT_NONE unless $opts->{color_private};
-  goto &colorify
-}
-
 
 sub __cmd_colorify_list_colors {
   Xchat::print(' -> Available colors:');
