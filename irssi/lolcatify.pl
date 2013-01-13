@@ -18,14 +18,11 @@ my $SAVED_CATS_TO = $ENV{HOME} . "/.irssi/saved_lulzcats" ;
 
 use Irssi ();
 our %IRSSI = (
-  name => 'lolcatify',
-
-  authors => 'Jon Portnoy',
-  contact => 'avenj@cobaltirc.org',
-
+  name        => 'lolcatify',
+  authors     => 'Jon Portnoy',
+  contact     => 'avenj@cobaltirc.org',
   description => 'Turn a user into a lolcat',
-
-  license => 'perl5',
+  license     => 'perl5',
 );
 
 
@@ -77,7 +74,7 @@ our %IRSSI = (
    	'\boh\b(?!.*hai)'  => [qw/o ohs/],
    	'can\si\s(?:ple(?:a|e)(?:s|z)e?)?\s?have\sa' => 'i can has',
    	'(?:hello|\bhi\b|\bhey\b|howdy|\byo\b),?'    => 'oh hai,',
-   	'(?:god|allah|buddah?|diety)'                => 'ceiling cat',
+   	'(?:god|allah|buddah?|jesus)'                => 'ceiling cat',
 	);
 
 	sub translate {
@@ -303,7 +300,7 @@ sub normalize_mask {
   my $piece;
 
   ## Push nick, if we have one, or * if we don't.
-  if ( $orig !~ /!/ && $orig =~ /@/ ) {
+  if ( index($orig, '!') == -1 && index($orig, '@') > -1) {
     $piece = $orig;
     push(@mask, '*');
   } else {
@@ -311,9 +308,9 @@ sub normalize_mask {
   }
 
   ## Split user/host portions and do some clean up.
-  $piece =~ s/!//g if defined $piece;
+  $piece        =~ s/!//g if defined $piece;
   @mask[1 .. 2] = split( /@/, $piece, 2) if defined $piece;
-  $mask[2] =~ s/@//g if defined $mask[2];
+  $mask[2]      =~ s/@//g if defined $mask[2];
 
   for ( 1 .. 2 ) {
     $mask[$_] = '*' unless defined $mask[$_];

@@ -66,7 +66,8 @@ Xchat::print($_) for (
   "-> Del via /decolorify <nick>",
   "-> List current via /colorify",
   "-> List colors via /colorify -colors",
-  "-> View seeings via /colorify -set",
+  "-> View settings via /colorify -set",
+  "-> Change via /colorify -set <opt> <value>",
 );
 
 Xchat::hook_print($_, \&colorify,
