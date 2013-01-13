@@ -153,6 +153,7 @@ sub __cmd_colorify_set {
     return Xchat::EAT_ALL
   }
 
+  $value = 0 if lc($value) eq 'off';
   $opts->{$param} = $value;
   Xchat::print("  $param : $value");
   save_colorified();
@@ -165,8 +166,7 @@ sub cmd_colorify {
 
   my $nick = lc($args[0] || '');
 
-  %nicks = %{ load_colorified() || {} }
-    unless keys %nicks;
+  %nicks = %{ load_colorified() } unless keys %nicks;
 
   unless ($nick) {
     Xchat::print("Current colorifications:");
@@ -177,7 +177,6 @@ sub cmd_colorify {
     }
     return Xchat::EAT_ALL
   }
-
 
   return __cmd_colorify_list_colors             if $nick eq '-colors';
   return __cmd_colorify_set(@args[1 .. $#args]) if $nick eq '-set';
@@ -190,7 +189,7 @@ sub cmd_colorify {
       ## Requesting current color for a user.
       if (defined $nicks{$nick}) {
         $col_code = $nicks{$nick};
-        $col_name = $col_by_name{$col_code};
+        $col_name = $name_by_col{$col_code};
         Xchat::print(" \003".$col_code.$nick." is $col_name ($col_code)\003");
       } else {
         Xchat::print("User '$nick' is not currently colorifed.");
@@ -243,8 +242,7 @@ sub get_color_for {
   my ($nick) = @_;
 
   ## Get nick -> color code map.
-  %nicks = %{ load_colorified() || {} }
-    unless keys %nicks;
+  %nicks = %{ load_colorified() } unless keys %nicks;
   my $col_code = $nicks{$nick} || return;
 
   unless (looks_like_number $col_code) {
