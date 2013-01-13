@@ -1,22 +1,12 @@
 use strict; use warnings FATAL => 'all';
-use Xchat; use 5.10.1; my $VERSION = '0.4'; my @reg; my $opts = {};
-
-###### CONFIGURABLE ######
-### Uncomment next line to colorify private also:
-# push @reg, 'Private Message', 'Private Action';
-
-### Uncomment next line to *only* colorify nicknames:
-# $opts->{nick_only} = 1;
-
-### Uncomment next line to *not* colorify nicknames (only txt):
-# $opts->{except_nicks} = 1;
+use Xchat; use 5.10.1; my $VERSION = '0.5';
 
 ### Default should be fine:
 my $save_path = get_save_location("colorified.cf")
   or die "Could not determine a safe save location";
-
-### You can alter color names below, if you're playing with Local Color hues.
-
+## Everything else is configurable via /colorify -set
+## You can alter color names below, if you're playing with Local Color hues.
+##
 ## Change the color of a user's channel text (and their nick)
 ## Licensed under the same terms as Perl 5
 ##   - Jon Portnoy  avenj@cobaltirc.org
@@ -29,6 +19,7 @@ my $save_path = get_save_location("colorified.cf")
 ##
 ##  Does not currently handle per-context casemap
 ##  (cheaps out and uses lc())
+
 
 my %col_by_name = qw/
   darkblue    18
@@ -49,16 +40,21 @@ my %col_by_name = qw/
 /;
 
 
+ #####################################################
+ #### Nothing past here is manually configurable. ####
+ #####################################################
+
+
+## Manage these via /colorify -set :
+my $opts = +{
+  nick_only     => 0,
+  except_nicks  => 0,
+  color_private => 0,
+};
+
+
 my %name_by_col = reverse %col_by_name;
 my %nicks;
-
-@reg = (
-  @reg,
-  'Channel Message',
-  'Channel Action',
-  'Channel Msg Hilight',
-  'Channel Action Hilight',
-);
 
 use Scalar::Util 'looks_like_number';
 
@@ -70,6 +66,7 @@ Xchat::print($_) for (
   "-> Del via /decolorify <nick>",
   "-> List current via /colorify",
   "-> List colors via /colorify -colors",
+  "-> View seeings via /colorify -set",
 );
 
 Xchat::hook_print($_, \&colorify,
@@ -77,7 +74,15 @@ Xchat::hook_print($_, \&colorify,
     data     => $_,
     priority => Xchat::PRI_HIGH,
   },
-) for @reg;
+) for 'Channel Message', 'Channel Action',
+      'Channel Msg Hilight', 'Channel Action Hilight';
+
+Xchat::hook_print($_, \&colorify_pvt,
+  {
+    data     => $_,
+    priority => Xchat::PRI_HIGH,
+  },
+) for 'Private Message', 'Private Action';
 
 Xchat::hook_command( $_, \&cmd_colorify,
   {
@@ -116,12 +121,59 @@ sub colorify {
   Xchat::EAT_ALL
 }
 
+sub colorify_pvt {
+  return Xchat::EAT_NONE unless $opts->{color_private};
+  goto &colorify
+}
+
+
+sub __cmd_colorify_list_colors {
+  Xchat::print(' -> Available colors:');
+  for my $col_name (sort keys %col_by_name) {
+    Xchat::print(" \003".$col_by_name{$col_name} . $col_name."\003")
+  }
+  return Xchat::EAT_ALL
+}
+
+sub __cmd_colorify_set {
+  my ($param, $value) = @_;
+
+  unless ($param) {
+    Xchat::print("-> Current colorifier settings:");
+    while (my ($k,$v) = each %$opts) {
+      Xchat::print("  $k : $v");
+    }
+    return Xchat::EAT_ALL
+  }
+
+  unless (defined $value) {
+    if (defined $opts->{$param}) {
+      my $v = $opts->{$param};
+      Xchat::print("  $param : $v")
+    } else {
+      Xchat::print("No such setting $param")
+    }
+    return Xchat::EAT_ALL
+  }
+
+  unless (exists $opts->{$param}) {
+    Xchat::print("Cannot set unknown option $param");
+    return Xchat::EAT_ALL
+  }
+
+  $opts->{$param} = $value;
+  Xchat::print("  $param : $value");
+  save_colorified();
+  return Xchat::EAT_ALL
+}
+
+
 sub cmd_colorify {
   my ($cmd, @args) = @{ $_[0] };
 
   my $nick = lc($args[0] || '');
 
-  %nicks = %{ load_colorified($save_path) || {} }
+  %nicks = %{ load_colorified() || {} }
     unless keys %nicks;
 
   unless ($nick) {
@@ -135,13 +187,8 @@ sub cmd_colorify {
   }
 
 
-  if ($nick eq '-colors') {
-    Xchat::print(' -> Available colors:');
-    for my $col_name (sort keys %col_by_name) {
-      Xchat::print(" \003".$col_by_name{$col_name} . $col_name."\003")
-    }
-    return Xchat::EAT_ALL
-  }
+  return __cmd_colorify_list_colors             if $nick eq '-colors';
+  return __cmd_colorify_set(@args[1 .. $#args]) if $nick eq '-set';
 
   if ($cmd eq 'colorify') {
     my $opt = $args[1];
@@ -159,8 +206,8 @@ sub cmd_colorify {
       return Xchat::EAT_ALL
     }
 
-    if (index($nick, '%') == 0) {
-      ## Reserved for config flags.
+    if (index($nick, '%') == 0 || index($nick, '-') == 0) {
+      ## Reserved for config/flags.
       Xchat::print("Nickname is noit valid ($nick)");
       return Xchat::EAT_ALL
     }
@@ -183,17 +230,16 @@ sub cmd_colorify {
 
     $nicks{$nick} = $col_code;
     Xchat::print("coloring $nick $col_name ($col_code)");
-    save_colorified($save_path, \%nicks);
+    save_colorified();
 
   } elsif ($cmd eq 'decolorify' || $cmd eq 'uncolorify') {
-
     unless (delete $nicks{$nick}) {
       Xchat::print("Do not have colorified nick $nick");
       return Xchat::EAT_ALL
     }
-
     Xchat::print("decoloring $nick");
-    save_colorified($save_path, \%nicks);
+    save_colorified();
+
   } else {
     Xchat::print("what the fuck? fell through in cmd_colorify")
   }
@@ -205,7 +251,7 @@ sub get_color_for {
   my ($nick) = @_;
 
   ## Get nick -> color code map.
-  %nicks = %{ load_colorified($save_path) || {} }
+  %nicks = %{ load_colorified() || {} }
     unless keys %nicks;
   my $col_code = $nicks{$nick} || return;
 
@@ -232,17 +278,17 @@ sub get_save_location {
 }
 
 sub save_colorified {
-  my ($file, $ref) = @_;
-
-  die "Expected file and ref" unless $file and ref $ref eq 'HASH';
-
+  die "No path to save to" unless $save_path;
   my @ln;
-  while (my ($key,$val) = each %$ref) {
+  while (my ($key,$val) = each %$opts) {
+    push @ln, "% $key $val\n";
+  }
+  while (my ($key,$val) = each %nicks) {
     push @ln, "$key $val\n";
   }
 
-  open my $fh, '>', $file
-    or warn "Could not open $file to save colorifications: $!"
+  open my $fh, '>', $save_path
+    or warn "Could not open $save_path to save colorifications: $!"
     and return;
 
   print $fh @ln;
@@ -252,20 +298,31 @@ sub save_colorified {
 }
 
 sub load_colorified {
-  my ($file) = @_;
-
   my %loaded;
-  return \%loaded unless -e $file;
+  return \%loaded unless -e $save_path;
 
-  open my $fh, '<', $file
-      or warn "Could not open $file to restore colorifications: $!"
+  open my $fh, '<', $save_path
+      or warn "Could not open $save_path to restore colorifications: $!"
       and return;
   my @in = readline($fh);
   close $fh;
 
-  while ($_ = shift @in) {
-    chomp;
-    my ($nick,$val) = split ' ';
+  while (my $line = shift @in) {
+    chomp $line;
+    my @pieces = split ' ', $line;
+
+    if ($pieces[0] eq '%') {
+      my ($param,$val) = @pieces[1,2];
+      unless (exists $opts->{$param}) {
+        Xchat::print("Warning; dropped unknown option $param");
+        next
+      }
+      $opts->{$param} = $val;
+      next
+    }
+
+    my ($nick,$val) = @pieces;
+
     unless ( looks_like_number($val) ) {
       ## Backwards-compat.
       if (defined $col_by_name{$val}) {
@@ -279,6 +336,7 @@ sub load_colorified {
         next
       }
     }
+
     $loaded{ lc($nick) } = $val;
   }
 
