@@ -124,7 +124,8 @@ sub __cmd_colorify_list_colors {
   for my $col_name (sort keys %col_by_name) {
     Xchat::print(" \003".$col_by_name{$col_name} . $col_name."\003")
   }
-  return Xchat::EAT_ALL
+
+  Xchat::EAT_ALL
 }
 
 sub __cmd_colorify_set {
@@ -156,8 +157,10 @@ sub __cmd_colorify_set {
   $value = 0 if lc($value) eq 'off';
   $opts->{$param} = $value;
   Xchat::print("  $param : $value");
+
   save_colorified();
-  return Xchat::EAT_ALL
+
+  Xchat::EAT_ALL
 }
 
 
