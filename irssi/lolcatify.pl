@@ -28,6 +28,7 @@ our %IRSSI = (
 
 {
   ## Inlined Acme::LOLCAT
+  ## Copyright (c) 2007 by Kent Cowgill
   package
     Acme::LOLCAT::Inline;
   use strict; use warnings FATAL => 'all';

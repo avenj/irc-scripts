@@ -337,4 +337,4 @@ sub load_colorified {
 }
 
 __END__
-stephanie<3
+RIP Stephanie Michelle Page, taken by cancer 3-13-2014
