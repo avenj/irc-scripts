@@ -12,7 +12,7 @@ my $save_path = get_save_location("colorified.cf")
 ##   - Jon Portnoy  avenj@cobaltirc.org
 ##
 ## CAVEATS:
-##  Currently fails if you're stripping colors ..
+##  Currently fails for text bodies if you're stripping colors ..
 ##   . . not sure if overriding is the Right Thing To Do
 ## TODO:
 ##  Bold / underline attribs?
@@ -44,6 +44,16 @@ my %col_by_name = qw/
  #### Nothing past here is manually configurable. ####
  #####################################################
 
+use Scalar::Util 'looks_like_number';
+
+my @help_text = (
+  "-> Add via /colorify <nick> <color>",
+  "-> Del via /decolorify <nick>",
+  "-> List current via /colorify",
+  "-> List colors via /colorify -colors",
+  "-> View settings via /colorify -set",
+  "-> Change via /colorify -set <opt> <value>",
+);
 
 ## Manage these via /colorify -set :
 my $opts = +{
@@ -52,23 +62,14 @@ my $opts = +{
   color_private => 0,
 };
 
-
 my %name_by_col = reverse %col_by_name;
 my %nicks;
 
-use Scalar::Util 'looks_like_number';
 
 Xchat::register('ColorizeTxt', $VERSION, "Colorize text from users");
 
 Xchat::print("o hai, colorizer thingo $VERSION loaded");
-Xchat::print($_) for (
-  "-> Add via /colorify <nick> <color>",
-  "-> Del via /decolorify <nick>",
-  "-> List current via /colorify",
-  "-> List colors via /colorify -colors",
-  "-> View settings via /colorify -set",
-  "-> Change via /colorify -set <opt> <value>",
-);
+Xchat::print($_) for @help_text;
 
 Xchat::hook_print($_, \&colorify,
   {
@@ -83,7 +84,7 @@ Xchat::hook_print($_, \&colorify,
 
 Xchat::hook_command( $_, \&cmd_colorify,
   {
-    help_text => "Colorify/decolorify text from users",
+    help_text => join("\n", @help_text),
   },
 ) for qw/colorify decolorify uncolorify/;
 
