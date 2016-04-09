@@ -32,7 +32,6 @@ our %IRSSI = (
   ## Copyright (c) 2007 by Kent Cowgill
   package
     Acme::LOLCAT::Inline;
-  use strict; use warnings FATAL => 'all';
 
 	my %repl = (
    	what     => [qw/wut whut/],   'you\b'   => [qw/yu yous yoo u/],
