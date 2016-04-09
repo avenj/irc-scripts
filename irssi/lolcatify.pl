@@ -1,6 +1,7 @@
 ## lolcatify.pl
-our $VERSION = '0.01';
-use strict; use warnings FATAL => 'all';
+our $VERSION = '0.02';
+use strict; use warnings;
+no warnings 'redefine';
 
 ## Configurable save location.
 ## Non-portable path. Alter as-needed.
