@@ -127,6 +127,7 @@ Irssi::command_bind lolcat => sub {
 };
 
 Irssi::signal_add "message public"  => \&incoming_msg;
+Irssi::signal_add "message irc action" => \&incoming_msg;
 
 ## FIXME configurably add privmsg handler?
 #Irssi::signal_add "message private" => \&incoming_msg;
