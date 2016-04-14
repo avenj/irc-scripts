@@ -234,6 +234,7 @@ sub lolcat_del {
       window => $win,
       lines  => [ "I no haz $mask nao." ],
     );
+    save_cats( $SAVED_CATS_TO );
   } else {
     print_cur(
       window => $win,
